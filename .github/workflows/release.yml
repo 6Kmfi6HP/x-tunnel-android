@@ -78,14 +78,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Build hev-socks5-tunnel arm64
+        run: bash ./scripts/build-hev-android.sh
+
       - name: Build x-tunnel arm64 sidecar
         run: |
           XTUNNEL_CORE_VERSION="${RELEASE_TAG}" \
           XTUNNEL_BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           bash ./scripts/build-core-android.sh
-
-      - name: Build hev-socks5-tunnel arm64
-        run: bash ./scripts/build-hev-android.sh
 
       - name: Decode release keystore
         shell: bash

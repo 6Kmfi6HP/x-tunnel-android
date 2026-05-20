@@ -51,11 +51,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build x-tunnel arm64 sidecar
-        run: bash ./scripts/build-core-android.sh
-
       - name: Build hev-socks5-tunnel arm64
         run: bash ./scripts/build-hev-android.sh
+
+      - name: Build x-tunnel arm64 sidecar
+        run: bash ./scripts/build-core-android.sh
 
       - name: Build and lint APKs
         run: ./gradlew --no-daemon assembleDebug lintDebug assembleRelease bundleRelease

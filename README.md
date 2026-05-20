@@ -20,18 +20,18 @@ $env:JAVA_HOME="C:\Program Files\Java\jdk-21"
 .\gradlew.bat assembleDebug
 ```
 
-Build the Android arm64 x-tunnel sidecar from the sibling core checkout:
-
-```powershell
-$env:XTUNNEL_CORE_DIR="C:\Users\liang\GitHub\x-tunnel"
-.\scripts\build-core-android.ps1
-```
-
 Build the Android arm64 tun2socks runtime:
 
 ```powershell
 $env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
 .\scripts\build-hev-android.ps1
+```
+
+Build the Android arm64 x-tunnel sidecar from the sibling core checkout:
+
+```powershell
+$env:XTUNNEL_CORE_DIR="C:\Users\liang\GitHub\x-tunnel"
+.\scripts\build-core-android.ps1
 ```
 
 Then rebuild the APK:
