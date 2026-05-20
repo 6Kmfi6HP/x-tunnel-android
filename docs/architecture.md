@@ -13,8 +13,8 @@
 
 ## 当前边界
 
-- 首个 ABI 只承诺 `arm64-v8a`。
-- `x86_64` 和 `armeabi-v7a` 需要 NDK/cgo 构建验证后再加入矩阵。
+- 当前 ABI 承诺 `arm64-v8a` 和 `x86_64`。`x86_64` 用于 Android 模拟器、Chromebook 和其他 x86_64 Android 环境，避免系统用 ARM 转译执行 Go sidecar。
+- `armeabi-v7a` 暂不承诺，除非后续确认 Go core、hev-socks5-tunnel 和 release 验证都能稳定覆盖 32 位设备。
 - App 不默认申请 `QUERY_ALL_PACKAGES`。
 - Release workflow 已预留签名和 GitHub Release 上传路径。
 - 当前 UI 已有可持久化的首个 profile 表单，覆盖 profile name、server URL、token、本地 SOCKS、连接数和 insecure TLS。
@@ -35,4 +35,4 @@
 
 `gh` 查询 `heiher/hev-socks5-tunnel` 后确认：项目为 MIT license，最新 release `2.15.0` 发布于 2026-05-10，支持 Linux/Android，README 提供 NDK `ndk-build` 构建路径。当前 release assets 主要是源码包和桌面/Linux 二进制，不应直接把 Linux arm64 asset 当 Android 产物使用。
 
-CI 中 clone `heiher/hev-socks5-tunnel`，使用 Android NDK 构建 `arm64-v8a` native artifact。Android 侧直接复用该项目内置的 `hev/htproxy/TProxyService` JNI 注册名，新增 Kotlin 包装类，避免维护额外 C/C++ bridge。Release 校验会检查 APK/AAB 内同时包含 `libxtunnel.so` 和 `libhev-socks5-tunnel.so`。
+CI 中 clone `heiher/hev-socks5-tunnel`，使用 Android NDK 构建 `arm64-v8a` 和 `x86_64` native artifact。Android 侧直接复用该项目内置的 `hev/htproxy/TProxyService` JNI 注册名，新增 Kotlin 包装类，避免维护额外 C/C++ bridge。Release 校验会检查 APK/AAB 的两个 ABI 目录内都包含 `libxtunnel.so` 和 `libhev-socks5-tunnel.so`。

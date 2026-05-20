@@ -6,23 +6,25 @@ asset_dir="${1:-$repo_root/app/build/outputs}"
 
 check_native_payload() {
   local asset="$1"
-  local lib_prefix
+  local lib_root
   local listing
 
   case "$asset" in
-    *.apk) lib_prefix="lib/arm64-v8a" ;;
-    *.aab) lib_prefix="base/lib/arm64-v8a" ;;
+    *.apk) lib_root="lib" ;;
+    *.aab) lib_root="base/lib" ;;
     *) return 0 ;;
   esac
 
   listing="$(unzip -Z1 "$asset")"
-  for native_lib in libxtunnel.so libhev-socks5-tunnel.so; do
-    if ! grep -Fx "$lib_prefix/$native_lib" <<< "$listing" >/dev/null; then
-      echo "Missing $lib_prefix/$native_lib in $asset" >&2
-      echo "Native entries found:" >&2
-      grep -E '(^|/)lib/arm64-v8a/.*\.so$' <<< "$listing" >&2 || true
-      return 1
-    fi
+  for abi in arm64-v8a x86_64; do
+    for native_lib in libxtunnel.so libhev-socks5-tunnel.so; do
+      if ! grep -Fx "$lib_root/$abi/$native_lib" <<< "$listing" >/dev/null; then
+        echo "Missing $lib_root/$abi/$native_lib in $asset" >&2
+        echo "Native entries found:" >&2
+        grep -E '(^|/)lib/[^/]+/.*\.so$' <<< "$listing" >&2 || true
+        return 1
+      fi
+    done
   done
 }
 

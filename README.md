@@ -20,18 +20,24 @@ $env:JAVA_HOME="C:\Program Files\Java\jdk-21"
 .\gradlew.bat assembleDebug
 ```
 
-Build the Android arm64 tun2socks runtime:
+Build the Android native tun2socks runtime for the supported ABIs:
 
 ```powershell
 $env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
 .\scripts\build-hev-android.ps1
 ```
 
-Build the Android arm64 x-tunnel sidecar from the sibling core checkout:
+Build the Android x-tunnel sidecar for the supported ABIs from the sibling core checkout:
 
 ```powershell
 $env:XTUNNEL_CORE_DIR="C:\Users\liang\GitHub\x-tunnel"
 .\scripts\build-core-android.ps1
+```
+
+The default native ABI set is `arm64-v8a x86_64`. Override it with `ANDROID_ABIS` when needed:
+
+```powershell
+$env:ANDROID_ABIS="arm64-v8a"
 ```
 
 Then rebuild the APK:
@@ -51,7 +57,7 @@ bash ./scripts/verify-release-assets.sh
 
 ## Release
 
-Tags matching `vMAJOR.MINOR.PATCH` run `.github/workflows/release.yml`. The release workflow builds the arm64 x-tunnel sidecar, builds a signed release APK/AAB, generates `SHA256SUMS`, and uploads assets to GitHub Releases.
+Tags matching `vMAJOR.MINOR.PATCH` run `.github/workflows/release.yml`. The release workflow builds the x-tunnel sidecar and tun2socks runtime for `arm64-v8a` and `x86_64`, builds a signed release APK/AAB, generates `SHA256SUMS`, and uploads assets to GitHub Releases.
 The Android `versionName` and `versionCode` are derived from the release tag during the workflow.
 
 Required repository secrets:

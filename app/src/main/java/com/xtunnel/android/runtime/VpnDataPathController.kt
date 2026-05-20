@@ -117,6 +117,11 @@ private fun XTunnelProfile.socksEndpoint(): SocksEndpoint {
     val host = hostPort.substringBeforeLast(':')
     val port = hostPort.substringAfterLast(':').toIntOrNull()
         ?: error("Invalid SOCKS5 listen port: $socksListen")
-    require(host.isNotBlank()) { "Invalid SOCKS5 listen host: $socksListen" }
-    return SocksEndpoint(host = host.trim('[', ']'), port = port)
+    val trimmedHost = host.trim('[', ']')
+    require(trimmedHost.isNotBlank()) { "Invalid SOCKS5 listen host: $socksListen" }
+    val connectHost = when (trimmedHost) {
+        "0.0.0.0", "::" -> "127.0.0.1"
+        else -> trimmedHost
+    }
+    return SocksEndpoint(host = connectHost, port = port)
 }

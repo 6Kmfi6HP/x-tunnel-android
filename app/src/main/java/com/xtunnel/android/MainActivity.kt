@@ -303,6 +303,19 @@ private fun ProfileCard(
                     onCheckedChange = { onProfileChange(profile.copy(insecure = it)) },
                 )
             }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    modifier = Modifier.padding(top = 12.dp),
+                    text = "Use TLS fallback",
+                )
+                Switch(
+                    checked = profile.fallback,
+                    onCheckedChange = { onProfileChange(profile.copy(fallback = it)) },
+                )
+            }
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = onSave,

@@ -26,7 +26,7 @@ android {
         versionName = appVersionName.get()
 
         ndk {
-            abiFilters += setOf("arm64-v8a")
+            abiFilters += setOf("arm64-v8a", "x86_64")
         }
     }
 

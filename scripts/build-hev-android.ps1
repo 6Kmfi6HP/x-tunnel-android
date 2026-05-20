@@ -1,6 +1,6 @@
 param(
     [string]$Version = $(if ($env:HEV_SOCKS5_TUNNEL_VERSION) { $env:HEV_SOCKS5_TUNNEL_VERSION } else { "2.15.0" }),
-    [string]$Abi = $(if ($env:ANDROID_ABI) { $env:ANDROID_ABI } else { "arm64-v8a" }),
+    [string]$Abis = $(if ($env:ANDROID_ABIS) { $env:ANDROID_ABIS } elseif ($env:ANDROID_ABI) { $env:ANDROID_ABI } else { "arm64-v8a x86_64" }),
     [string]$NdkVersion = $(if ($env:ANDROID_NDK_VERSION) { $env:ANDROID_NDK_VERSION } else { "27.0.12077973" })
 )
 
@@ -84,6 +84,7 @@ Convert-WslSymlinksToFiles -Root $SourceDir
 
 $JniLibsOut = Join-Path $RepoRoot "app\src\main\jniLibs"
 $ObjOut = Join-Path $RepoRoot "build\hev-socks5-tunnel\obj"
+$AbiList = ($Abis -split '[,\s]+' | Where-Object { $_ }) -join " "
 
 $previousHostOs = $env:HOST_OS
 $env:HOST_OS = "windows"
@@ -93,18 +94,20 @@ $env:HOST_OS = "windows"
     "NDK_APPLICATION_MK=$(Join-Path $SourceDir 'Application.mk')" `
     "NDK_OUT=$ObjOut" `
     "NDK_LIBS_OUT=$JniLibsOut" `
-    "APP_ABI=$Abi"
+    "APP_ABI=$AbiList"
 $env:HOST_OS = $previousHostOs
 
 if ($LASTEXITCODE -ne 0) {
     throw "ndk-build failed with exit code $LASTEXITCODE"
 }
 
-$Artifact = Join-Path $JniLibsOut "$Abi\libhev-socks5-tunnel.so"
-if (!(Test-Path $Artifact)) {
-    throw "Expected artifact missing: $Artifact"
-}
+foreach ($Abi in ($AbiList -split '\s+')) {
+    $Artifact = Join-Path $JniLibsOut "$Abi\libhev-socks5-tunnel.so"
+    if (!(Test-Path $Artifact)) {
+        throw "Expected artifact missing: $Artifact"
+    }
 
-$Hash = (Get-FileHash -Algorithm SHA256 $Artifact).Hash.ToLowerInvariant()
-Set-Content -Path "$Artifact.sha256" -Value "$Hash  $Artifact" -Encoding ascii
-Get-Item $Artifact | Select-Object FullName, Length
+    $Hash = (Get-FileHash -Algorithm SHA256 $Artifact).Hash.ToLowerInvariant()
+    Set-Content -Path "$Artifact.sha256" -Value "$Hash  $Artifact" -Encoding ascii
+    Get-Item $Artifact | Select-Object FullName, Length
+}

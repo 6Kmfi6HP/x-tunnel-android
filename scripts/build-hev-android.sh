@@ -4,7 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source_dir="${HEV_SOCKS5_TUNNEL_DIR:-$repo_root/external/hev-socks5-tunnel}"
 version="${HEV_SOCKS5_TUNNEL_VERSION:-2.15.0}"
-abi="${ANDROID_ABI:-arm64-v8a}"
+abis="${ANDROID_ABIS:-${ANDROID_ABI:-arm64-v8a x86_64}}"
 android_home="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 ndk_version="${ANDROID_NDK_VERSION:-27.0.12077973}"
 ndk_home="${ANDROID_NDK_HOME:-}"
@@ -53,14 +53,17 @@ if [[ "$ndk_build" == *.cmd ]]; then
   exit 1
 fi
 
+abis="${abis//,/ }"
 "$ndk_build" \
   NDK_PROJECT_PATH="$source_dir" \
   APP_BUILD_SCRIPT="$source_dir/Android.mk" \
   NDK_APPLICATION_MK="$source_dir/Application.mk" \
   NDK_OUT="$repo_root/build/hev-socks5-tunnel/obj" \
   NDK_LIBS_OUT="$repo_root/app/src/main/jniLibs" \
-  APP_ABI="$abi"
+  APP_ABI="$abis"
 
-artifact="$repo_root/app/src/main/jniLibs/$abi/libhev-socks5-tunnel.so"
-test -s "$artifact"
-sha256sum "$artifact" > "$artifact.sha256"
+for abi in $abis; do
+  artifact="$repo_root/app/src/main/jniLibs/$abi/libhev-socks5-tunnel.so"
+  test -s "$artifact"
+  sha256sum "$artifact" > "$artifact.sha256"
+done

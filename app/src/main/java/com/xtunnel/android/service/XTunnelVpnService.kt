@@ -111,8 +111,14 @@ class XTunnelVpnService : VpnService() {
         private const val EXTRA_SERVER_URL = "server_url"
         private const val EXTRA_TOKEN = "token"
         private const val EXTRA_SOCKS_LISTEN = "socks_listen"
+        private const val EXTRA_METRICS_LISTEN = "metrics_listen"
+        private const val EXTRA_CIDR = "cidr"
+        private const val EXTRA_DNS = "dns"
+        private const val EXTRA_ECH = "ech"
+        private const val EXTRA_BLOCK_PORTS = "block_ports"
         private const val EXTRA_CONNECTIONS = "connections"
         private const val EXTRA_INSECURE = "insecure"
+        private const val EXTRA_FALLBACK = "fallback"
 
         fun start(context: Context, profile: XTunnelProfile = DefaultProfile.local) {
             val intent = Intent(context, XTunnelVpnService::class.java)
@@ -121,8 +127,14 @@ class XTunnelVpnService : VpnService() {
                 .putExtra(EXTRA_SERVER_URL, profile.serverUrl)
                 .putExtra(EXTRA_TOKEN, profile.token)
                 .putExtra(EXTRA_SOCKS_LISTEN, profile.socksListen)
+                .putExtra(EXTRA_METRICS_LISTEN, profile.metricsListen)
+                .putExtra(EXTRA_CIDR, profile.cidr)
+                .putExtra(EXTRA_DNS, profile.dns)
+                .putExtra(EXTRA_ECH, profile.ech)
+                .putExtra(EXTRA_BLOCK_PORTS, profile.blockPorts)
                 .putExtra(EXTRA_CONNECTIONS, profile.connections)
                 .putExtra(EXTRA_INSECURE, profile.insecure)
+                .putExtra(EXTRA_FALLBACK, profile.fallback)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -141,8 +153,14 @@ class XTunnelVpnService : VpnService() {
                 serverUrl = getStringExtra(EXTRA_SERVER_URL) ?: DefaultProfile.local.serverUrl,
                 token = getStringExtra(EXTRA_TOKEN) ?: DefaultProfile.local.token,
                 socksListen = getStringExtra(EXTRA_SOCKS_LISTEN) ?: DefaultProfile.local.socksListen,
+                metricsListen = getStringExtra(EXTRA_METRICS_LISTEN) ?: DefaultProfile.local.metricsListen,
+                cidr = getStringExtra(EXTRA_CIDR) ?: DefaultProfile.local.cidr,
+                dns = getStringExtra(EXTRA_DNS) ?: DefaultProfile.local.dns,
+                ech = getStringExtra(EXTRA_ECH) ?: DefaultProfile.local.ech,
+                blockPorts = getStringExtra(EXTRA_BLOCK_PORTS) ?: DefaultProfile.local.blockPorts,
                 connections = getIntExtra(EXTRA_CONNECTIONS, DefaultProfile.local.connections),
                 insecure = getBooleanExtra(EXTRA_INSECURE, DefaultProfile.local.insecure),
+                fallback = getBooleanExtra(EXTRA_FALLBACK, DefaultProfile.local.fallback),
             )
         }
     }

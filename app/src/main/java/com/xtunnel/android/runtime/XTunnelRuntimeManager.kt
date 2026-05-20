@@ -6,6 +6,7 @@ import android.net.VpnService
 import com.xtunnel.android.model.XTunnelProfile
 import org.json.JSONObject
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.ExecutorService
@@ -216,11 +217,22 @@ class XTunnelRuntimeManager private constructor(context: Context) {
 
     private fun consumeOutput(started: Process) {
         Thread {
-            started.inputStream.bufferedReader().useLines { lines ->
-                lines.take(MAX_LOG_LINES).forEach { line ->
+            runCatching {
+                started.inputStream.bufferedReader().useLines { lines ->
+                    lines.take(MAX_LOG_LINES).forEach { line ->
+                        RuntimeStateStore.update(
+                            RuntimeStateStore.snapshot().copy(
+                                detail = line.take(MAX_DETAIL_CHARS),
+                                updatedAtMillis = System.currentTimeMillis(),
+                            ),
+                        )
+                    }
+                }
+            }.onFailure { error ->
+                if (error !is IOException) {
                     RuntimeStateStore.update(
                         RuntimeStateStore.snapshot().copy(
-                            detail = line.take(MAX_DETAIL_CHARS),
+                            detail = "x-tunnel output reader failed: ${error.message ?: error.javaClass.simpleName}",
                             updatedAtMillis = System.currentTimeMillis(),
                         ),
                     )
@@ -238,13 +250,26 @@ class XTunnelRuntimeManager private constructor(context: Context) {
             .put("listen", socksListen)
             .put("forward", serverUrl)
             .put("token", this.token)
+            .put("metrics", metricsListen)
+            .put("cidr", cidr)
+            .put("dns", dns)
+            .put("ech", ech)
+            .put("block", blockPorts)
             .put("connections", connections)
             .put("insecure", insecure)
+            .put("fallback", fallback)
             .put("dial_timeout", "5s")
+            .put("ws_handshake_timeout", "5s")
             .put("reconnect_delay", "1s")
-            .put("reconnect_max_delay", "15s")
-            .put("reconnect_jitter", "250ms")
+            .put("reconnect_max_delay", "30s")
+            .put("reconnect_jitter", "500ms")
             .put("rtt_timeout", "2s")
+            .put("dns_timeout", "3s")
+            .put("ech_retry_delay", "2s")
+            .put("udp_read_timeout", "1s")
+            .put("shutdown_timeout", "10s")
+            .put("auth_skew", "30s")
+            .put("preauth_timeout", "5s")
     }
 
     private data class ReadyInfo(
