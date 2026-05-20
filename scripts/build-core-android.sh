@@ -40,6 +40,13 @@ go_arch_for_abi() {
 
 clang_for_abi() {
   case "$1" in
+    arm64-v8a)
+      if [[ -z "$ndk_home" ]]; then
+        echo "ANDROID_HOME, ANDROID_SDK_ROOT, or ANDROID_NDK_HOME must be set for arm64-v8a Android builds." >&2
+        exit 1
+      fi
+      printf '%s/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android23-clang\n' "$ndk_home"
+      ;;
     x86_64)
       if [[ -z "$ndk_home" ]]; then
         echo "ANDROID_HOME, ANDROID_SDK_ROOT, or ANDROID_NDK_HOME must be set for x86_64 Android builds." >&2

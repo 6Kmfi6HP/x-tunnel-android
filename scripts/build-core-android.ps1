@@ -46,6 +46,7 @@ function Resolve-GoArch {
 function Resolve-AndroidClang {
     param([string]$Abi)
     $triple = switch ($Abi) {
+        "arm64-v8a" { "aarch64-linux-android23-clang.cmd" }
         "x86_64" { "x86_64-linux-android23-clang.cmd" }
         default { return "" }
     }
