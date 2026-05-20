@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">x-tunnel</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="vpn_notification_channel">VPN status</string>
+    <string name="vpn_notification_title">x-tunnel VPN</string>
+    <string name="vpn_notification_text">VPN connection is active.</string>
+</resources>

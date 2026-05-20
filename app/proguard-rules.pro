@@ -1,0 +1,2 @@
+-keep class com.xtunnel.android.service.XTunnelVpnService { *; }
+-keep class hev.htproxy.TProxyService { *; }

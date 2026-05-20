@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  JAVA_VERSION: "21"
+  GO_VERSION: "1.24.4"
+  ANDROID_API: "36"
+  ANDROID_BUILD_TOOLS: "36.0.0"
+  ANDROID_NDK: "27.0.12077973"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout Android client
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Checkout x-tunnel core
+        uses: actions/checkout@v6
+        with:
+          repository: 6Kmfi6HP/x-tunnel
+          path: external/x-tunnel
+
+      - name: Validate tag
+        shell: bash
+        run: |
+          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release tag must look like v1.2.3 or v1.2.3-rc.1: ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          version="${RELEASE_TAG#v}"
+          core="${version%%-*}"
+          IFS=. read -r major minor patch <<< "$core"
+          code=$((10#$major * 1000000 + 10#$minor * 1000 + 10#$patch))
+          if [[ "${version}" == *-* ]]; then
+            code=$((code + 900))
+          fi
+          echo "XTUNNEL_ANDROID_VERSION_NAME=${version}" >> "$GITHUB_ENV"
+          echo "XTUNNEL_ANDROID_VERSION_CODE=${code}" >> "$GITHUB_ENV"
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android packages
+        run: sdkmanager "platforms;android-${ANDROID_API}" "build-tools;${ANDROID_BUILD_TOOLS}" "ndk;${ANDROID_NDK}"
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: external/x-tunnel/go.sum
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build x-tunnel arm64 sidecar
+        run: |
+          XTUNNEL_CORE_VERSION="${RELEASE_TAG}" \
+          XTUNNEL_BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          bash ./scripts/build-core-android.sh
+
+      - name: Build hev-socks5-tunnel arm64
+        run: bash ./scripts/build-hev-android.sh
+
+      - name: Decode release keystore
+        shell: bash
+        run: |
+          test -n "${ANDROID_KEYSTORE_BASE64}"
+          printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > "${RUNNER_TEMP}/release.jks"
+          echo "ANDROID_KEYSTORE_FILE=${RUNNER_TEMP}/release.jks" >> "$GITHUB_ENV"
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Build signed release
+        run: ./gradlew --no-daemon assembleRelease bundleRelease
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Generate checksums
+        run: bash ./scripts/verify-release-assets.sh
+
+      - name: Create or update GitHub release
+        shell: bash
+        run: |
+          assets=(app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab SHA256SUMS)
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" "${assets[@]}" --clobber
+          else
+            gh release create "${RELEASE_TAG}" "${assets[@]}" \
+              --title "x-tunnel Android ${RELEASE_TAG}" \
+              --generate-notes \
+              --verify-tag
+          fi

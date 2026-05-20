@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: "21"
+  GO_VERSION: "1.24.4"
+  ANDROID_API: "36"
+  ANDROID_BUILD_TOOLS: "36.0.0"
+  ANDROID_NDK: "27.0.12077973"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Android client
+        uses: actions/checkout@v6
+
+      - name: Checkout x-tunnel core
+        uses: actions/checkout@v6
+        with:
+          repository: 6Kmfi6HP/x-tunnel
+          path: external/x-tunnel
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android packages
+        run: sdkmanager "platforms;android-${ANDROID_API}" "build-tools;${ANDROID_BUILD_TOOLS}" "ndk;${ANDROID_NDK}"
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: external/x-tunnel/go.sum
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build x-tunnel arm64 sidecar
+        run: bash ./scripts/build-core-android.sh
+
+      - name: Build hev-socks5-tunnel arm64
+        run: bash ./scripts/build-hev-android.sh
+
+      - name: Build and lint APKs
+        run: ./gradlew --no-daemon assembleDebug lintDebug assembleRelease bundleRelease
+
+      - name: Verify native release assets
+        run: bash ./scripts/verify-release-assets.sh
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: x-tunnel-android-debug
+          path: app/build/outputs/apk/debug/*.apk
+
+      - name: Upload release package outputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: x-tunnel-android-release-unsigned
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+            SHA256SUMS
