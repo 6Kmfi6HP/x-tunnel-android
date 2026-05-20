@@ -7,6 +7,7 @@ asset_dir="${1:-$repo_root/app/build/outputs}"
 check_native_payload() {
   local asset="$1"
   local lib_prefix
+  local listing
 
   case "$asset" in
     *.apk) lib_prefix="lib/arm64-v8a" ;;
@@ -14,8 +15,15 @@ check_native_payload() {
     *) return 0 ;;
   esac
 
-  unzip -Z1 "$asset" | grep -Fx "$lib_prefix/libxtunnel.so" >/dev/null
-  unzip -Z1 "$asset" | grep -Fx "$lib_prefix/libhev-socks5-tunnel.so" >/dev/null
+  listing="$(unzip -Z1 "$asset")"
+  for native_lib in libxtunnel.so libhev-socks5-tunnel.so; do
+    if ! grep -Fx "$lib_prefix/$native_lib" <<< "$listing" >/dev/null; then
+      echo "Missing $lib_prefix/$native_lib in $asset" >&2
+      echo "Native entries found:" >&2
+      grep -E '(^|/)lib/arm64-v8a/.*\.so$' <<< "$listing" >&2 || true
+      return 1
+    fi
+  done
 }
 
 (
@@ -27,6 +35,7 @@ check_native_payload() {
   )
   test "${#assets[@]}" -gt 0
   for asset in "${assets[@]}"; do
+    echo "Verifying $asset"
     check_native_payload "$asset"
   done
   printf '%s\0' "${assets[@]}" | xargs -0 sha256sum > "$repo_root/SHA256SUMS"
